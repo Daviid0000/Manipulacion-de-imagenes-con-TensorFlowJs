@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manipulación de imágenes con TensorFlow.js</title>
+</head>
+<body>
+  <h1>Manipulación de imágenes con TensorFlow.js</h1>
+  <hr>
+
+  <h2>Insertar imagen</h2>
+  <input type="file" accept="image/*" id="fileInput"><br>
+  <button onclick="processImage()">Enviar</button>
+
+  <canvas id="outputCanvas" width="300" height="300"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0"></script>
+  <script>
+    async function processImage() {
+      const fileInput = document.getElementById('fileInput');
+      const outputCanvas = document.getElementById('outputCanvas');
+      const ctx = outputCanvas.getContext('2d');
+
+      const image = new Image();
+      image.onload = async function() {
+        // Convertir la imagen a un tensor de TensorFlow
+        const tensor = tf.browser.fromPixels(image);
+
+        // Definir las coordenadas de la región de interés (ROI) para recortar y redimensionar la imagen
+        const boxes = tf.tensor2d([[0.25, 0.25, 0.75, 0.75]]); // Por ejemplo, recortar el centro de la imagen
+        const boxInd = tf.tensor1d([0]).toInt(); // Convertir a tensor de enteros
+        const cropSize = [150, 150]; // Tamaño del recorte (150x150 píxeles)
+
+        // Aplicar tf.image.cropAndResize
+        const croppedTensor = tf.image.cropAndResize(tensor.expandDims(0), boxes, boxInd, cropSize);
+
+        // Convertir el tensor resultante a un tensor de píxeles de imagen
+        const croppedPixels = await croppedTensor.squeeze().array();
+
+        // Mostrar la imagen recortada en el canvas
+        tf.browser.toPixels(croppedPixels, outputCanvas);
+      };
+
+      // Cargar la imagen seleccionada por el usuario
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function() {
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
